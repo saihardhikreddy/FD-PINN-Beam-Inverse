@@ -20,5 +20,11 @@ The network is trained in the frequency domain, splitting the displacement into 
 The L-BFGS optimizer successfully minimized the combined physics and data loss to a value of `1.58e+02` over 3000 epochs, allowing the model to simultaneously reconstruct the continuous vibration field and back-calculate the exact unknown stiffness parameter.
 
 ---
-**Developed By:** R Gagan Chowdary
+
+## Contributors
+
+- **Sai Hardhik Reddy** ([@saihardhikreddy](https://github.com/saihardhikreddy)) - Model architecture customization (SIREN activation, deep network tuning), boundary weighting implementation, and inverse parameter optimization.
+- **R Gagan Chowdary** ([@rgaganchowdary](https://github.com/rgaganchowdary)) - Physics formulation, Euler-Bernoulli PDE operator mapping, and initial frequency-domain sensor data pipeline.
+
+---
 **Course/Context:** Computational Mechanics
