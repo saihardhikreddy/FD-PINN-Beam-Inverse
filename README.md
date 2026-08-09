@@ -22,9 +22,8 @@ The L-BFGS optimizer successfully minimized the combined physics and data loss t
 ---
 
 ## Contributors
-
-- **Sai Hardhik Reddy** ([@saihardhikreddy](https://github.com/saihardhikreddy)) - Model architecture customization (SIREN activation, deep network tuning), boundary weighting implementation, and inverse parameter optimization.
-- **R Gagan Chowdary** ([@rgaganchowdary](https://github.com/rgaganchowdary)) - Physics formulation, Euler-Bernoulli PDE operator mapping, and initial frequency-domain sensor data pipeline.
+- Sai Hardhik Reddy ([@saihardhikreddy](https://github.com/saihardhikreddy))
+- R Gagan Chowdary
 
 ---
 **Course/Context:** Computational Mechanics
