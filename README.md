@@ -21,6 +21,34 @@ The L-BFGS optimizer successfully minimized the combined physics and data loss t
 
 ---
 
+## 🚀 Setup & Execution
+
+### Prerequisites
+* Python 3.9+
+* TensorFlow (2.12+)
+* DeepXDE
+
+```bash
+git clone https://github.com/saihardhikreddy/FD-PINN-Beam-Inverse.git
+cd FD-PINN-Beam-Inverse
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On Linux/macOS:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+### Running the Inverse PINN Solver
+```bash
+python FD-PINN_Optimized.py
+```
+Outputs the predicted displacement fields (`ur_pred_optimized.txt`, `ui_pred_optimized.txt`) and training loss convergence history (`loss.dat`).
+
+
+---
+
 ## Contributors
 - Sai Hardhik Reddy ([@saihardhikreddy](https://github.com/saihardhikreddy))
 - R Gagan Chowdary
