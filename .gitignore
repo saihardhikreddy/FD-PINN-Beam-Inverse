@@ -30,5 +30,7 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Logs
+# Logs & Output Plots
 *.log
+beam_vibration_field.png
+
