@@ -5,17 +5,22 @@ Loads predicted real and imaginary beam displacement components (ur, ui),
 computes overall displacement magnitude, and produces publication-quality field plots.
 """
 
+from pathlib import Path
 import os
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+SCRIPT_DIR = Path(__file__).resolve().parent
 
-def visualize_beam_predictions():
-    ur_file = "ur_pred_optimized.txt"
-    ui_file = "ui_pred_optimized.txt"
 
-    if not os.path.exists(ur_file) or not os.path.exists(ui_file):
-        print("Prediction files ur_pred_optimized.txt or ui_pred_optimized.txt not found.")
+def visualize_beam_predictions(output_dir: Path = SCRIPT_DIR):
+    ur_file = output_dir / "ur_pred_optimized.txt"
+    ui_file = output_dir / "ui_pred_optimized.txt"
+
+    if not ur_file.is_file() or not ui_file.is_file():
+        print(f"Prediction files {ur_file.name} or {ui_file.name} not found.")
         return
 
     ur = np.loadtxt(ur_file)
@@ -46,8 +51,9 @@ def visualize_beam_predictions():
     axes[1].legend(loc="upper right", frameon=True)
 
     plt.tight_layout()
-    output_png = "beam_vibration_field.png"
+    output_png = output_dir / "beam_vibration_field.png"
     plt.savefig(output_png)
+    plt.close()
     print(f"Successfully generated beam vibration plot: {output_png}")
 
 
