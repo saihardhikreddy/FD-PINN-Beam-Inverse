@@ -34,3 +34,6 @@ Thumbs.db
 *.log
 beam_vibration_field.png
 
+
+# Generated plot
+beam_vibration_field.png
