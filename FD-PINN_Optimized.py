@@ -1,7 +1,12 @@
 import deepxde as dde
 import numpy as np
 import math
+from pathlib import Path
+
 import tensorflow as tf
+
+# Inputs and outputs live next to this script, wherever it is run from.
+HERE = Path(__file__).resolve().parent
 
 # ==========================================
 # 1. SETUP PRECISION (Strict float64 for structural math)
@@ -12,7 +17,7 @@ dde.config.set_default_float("float64")
 # ==========================================
 # 2. LOAD VERIFIED SENSOR DATA
 # ==========================================
-data = np.loadtxt('data_inverse.txt', dtype='float64')
+data = np.loadtxt(HERE / 'data_inverse.txt', dtype='float64')
 
 # ==========================================
 # 3. CONSTANTS & PARAMETERS
@@ -108,13 +113,13 @@ losshistory, train_state = model.train(
     epochs=3000, 
     display_every=100, 
     callbacks=[variable], 
-    model_save_path="./model/trained-model-optimized"
+    model_save_path=str(HERE / "model" / "trained-model-optimized")
 )
 
 # ==========================================
 # 11. SAVE OPTIMIZED RESULTS
 # ==========================================
-dde.saveplot(losshistory, train_state, issave=True, isplot=True)
+dde.saveplot(losshistory, train_state, issave=True, isplot=True, output_dir=str(HERE))
 
 # Generate specific outputs for the optimized model
 x_star = np.linspace(0, L, 101)
@@ -123,7 +128,7 @@ X1_star, F1_star = np.meshgrid(x_star, f_star)
 X = np.vstack((X1_star.flatten(), F1_star.flatten())).T
 
 pred = model.predict(X)
-np.savetxt('ur_pred_optimized.txt', pred[:, 0])
-np.savetxt('ui_pred_optimized.txt', pred[:, 1])
+np.savetxt(HERE / 'ur_pred_optimized.txt', pred[:, 0])
+np.savetxt(HERE / 'ui_pred_optimized.txt', pred[:, 1])
 
 print("Optimized Training Complete. Results saved successfully.")
