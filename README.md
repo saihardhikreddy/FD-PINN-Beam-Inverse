@@ -68,6 +68,18 @@ python FD-PINN_Optimized.py
 ```
 Outputs the predicted displacement fields (`ur_pred_optimized.txt`, `ui_pred_optimized.txt`) and training loss convergence history (`loss.dat`).
 
+### Plotting the Results
+```bash
+python plot_results.py
+```
+Reshapes the saved predictions into a frequency × position grid and draws the displacement field. It needs only numpy and matplotlib.
+
+### Running the Tests
+```bash
+pip install pytest
+python -m pytest -q
+```
+
 
 ---
 
