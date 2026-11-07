@@ -27,7 +27,7 @@ PI = math.pi
 m = 1.0     # Mass per unit length
 v = 1.0     # Velocity of moving load
 p0 = 20.0   # Load magnitude
-fmax = 0.5  # Time limit
+fmax = 0.5  # Highest excitation frequency (the second input axis is frequency, not time)
 L = 10.0    # Beam Length
 ks = 0.025  # Foundation coefficient
 
@@ -104,7 +104,9 @@ model.compile("L-BFGS-B",
               loss_weights=[1, 1, 1e2, 1e1, 1e3, 1e2, 1e6, 1e7], 
               external_trainable_variables=CC)
 
-variable = dde.callbacks.VariableValue(CC, period=100)
+# Log the discovered stiffness term every 100 steps to variables.dat, so the answer to the
+# inverse problem is kept, not just printed and lost when the terminal closes.
+variable = dde.callbacks.VariableValue(CC, period=100, filename=str(HERE / "variables.dat"), precision=6)
 
 # ==========================================
 # 10. EXECUTE TRAINING
@@ -131,4 +133,6 @@ pred = model.predict(X)
 np.savetxt(HERE / 'ur_pred_optimized.txt', pred[:, 0])
 np.savetxt(HERE / 'ui_pred_optimized.txt', pred[:, 1])
 
+cc = float(variable.get_value()[0])
+print(f"Discovered CC = {cc:.6f}, so EI = 1000 + CC = {1000.0 + cc:.6f} (history in variables.dat)")
 print("Optimized Training Complete. Results saved successfully.")

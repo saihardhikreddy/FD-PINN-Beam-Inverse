@@ -66,7 +66,7 @@ pip install -r requirements.txt
 ```bash
 python FD-PINN_Optimized.py
 ```
-Outputs the predicted displacement fields (`ur_pred_optimized.txt`, `ui_pred_optimized.txt`) and training loss convergence history (`loss.dat`).
+Outputs the predicted displacement fields (`ur_pred_optimized.txt`, `ui_pred_optimized.txt`), training loss convergence history (`loss.dat`) and the discovered stiffness parameter `CC` every 100 steps (`variables.dat`; the beam stiffness is EI = 1000 + CC).
 
 ### Plotting the Results
 ```bash
