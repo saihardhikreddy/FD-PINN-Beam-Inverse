@@ -111,6 +111,9 @@ variable = dde.callbacks.VariableValue(CC, period=100, filename=str(HERE / "vari
 # ==========================================
 # 10. EXECUTE TRAINING
 # ==========================================
+# model/ is gitignored, so a fresh clone doesn't have it, and DeepXDE's save() doesn't create
+# it: without this the checkpoint save at the end of training fails and nothing is written.
+(HERE / "model").mkdir(exist_ok=True)
 losshistory, train_state = model.train(
     epochs=3000, 
     display_every=100, 
