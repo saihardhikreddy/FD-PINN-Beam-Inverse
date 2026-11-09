@@ -39,3 +39,18 @@ def test_plot_is_written(tmp_path):
 
 def test_missing_files_return_none(tmp_path):
     assert plot_results.visualize_beam_predictions(tmp_path) is None
+
+
+def test_loss_breakdown_matches_the_reported_final_loss():
+    info = plot_results.loss_breakdown(plot_results.SCRIPT_DIR / "loss.dat")
+    assert info["steps"] == (0, 3000)
+    # The README quotes a final combined loss of 1.58e+02.
+    assert info["total"][1] == pytest.approx(158, abs=1)
+    assert info["total"][1] < info["total"][0]
+    assert list(info["terms"]) == plot_results.LOSS_TERMS
+
+
+def test_loss_breakdown_rejects_a_short_file(tmp_path):
+    np.savetxt(tmp_path / "loss.dat", [[0, 1.0, 2.0]])
+    with pytest.raises(ValueError, match="expected at least 8"):
+        plot_results.loss_breakdown(tmp_path / "loss.dat")

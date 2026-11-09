@@ -34,6 +34,39 @@ def load_field(path: Path, nf: int = NF, nx: int = NX) -> np.ndarray:
     return values.reshape(nf, nx)
 
 
+# Order of the loss terms in loss.dat, as compiled in FD-PINN_Optimized.py: the two PDE residuals,
+# the two sensor-data fits (PointSetBC), then the four boundary conditions.
+LOSS_TERMS = ["PDE (real)", "PDE (imag)", "sensor data (real)", "sensor data (imag)",
+              "BC u_r = 0", "BC u_i = 0", "BC u_r'' = 0", "BC u_i'' = 0"]
+
+
+def loss_breakdown(path: Path) -> dict:
+    """Training loss per term at the first and last logged step of DeepXDE's loss.dat.
+
+    Each row of loss.dat is: step, the weighted training loss of every term, then the same for
+    the test set. Returns {"steps": (first, last), "terms": {name: (first, last)}, "total": (first, last)}.
+    """
+    rows = np.atleast_2d(np.loadtxt(path))
+    n = len(LOSS_TERMS)
+    if rows.shape[1] < 1 + n:
+        raise ValueError(f"{path.name} has {rows.shape[1] - 1} loss columns, expected at least {n}")
+    first, last = rows[0, 1:1 + n], rows[-1, 1:1 + n]
+    return {
+        "steps": (int(rows[0, 0]), int(rows[-1, 0])),
+        "terms": {name: (float(a), float(b)) for name, a, b in zip(LOSS_TERMS, first, last)},
+        "total": (float(first.sum()), float(last.sum())),
+    }
+
+
+def print_loss_breakdown(path: Path) -> None:
+    info = loss_breakdown(path)
+    s0, s1 = info["steps"]
+    print(f"Training loss by term (step {s0} -> step {s1}):")
+    for name, (a, b) in info["terms"].items():
+        print(f"  {name:<20} {a:>12.4g} -> {b:.4g}")
+    print(f"  {'total':<20} {info['total'][0]:>12.4g} -> {info['total'][1]:.4g}")
+
+
 def visualize_beam_predictions(output_dir: Path = SCRIPT_DIR):
     ur_file = output_dir / "ur_pred_optimized.txt"
     ui_file = output_dir / "ui_pred_optimized.txt"
@@ -83,3 +116,5 @@ def visualize_beam_predictions(output_dir: Path = SCRIPT_DIR):
 
 if __name__ == "__main__":
     visualize_beam_predictions()
+    if (SCRIPT_DIR / "loss.dat").is_file():
+        print_loss_breakdown(SCRIPT_DIR / "loss.dat")
