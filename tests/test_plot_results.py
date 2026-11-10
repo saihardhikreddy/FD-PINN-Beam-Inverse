@@ -54,3 +54,22 @@ def test_loss_breakdown_rejects_a_short_file(tmp_path):
     np.savetxt(tmp_path / "loss.dat", [[0, 1.0, 2.0]])
     with pytest.raises(ValueError, match="expected at least 8"):
         plot_results.loss_breakdown(tmp_path / "loss.dat")
+
+
+def test_grid_matches_the_training_script():
+    """plot_results.py reshapes the predictions with its own copy of the grid. If the training
+    script's grid changes and this copy doesn't, every plot is silently scrambled. The training
+    script needs DeepXDE to import, so read its constants from the source instead."""
+    import ast
+
+    tree = ast.parse((Path(plot_results.__file__).parent / "FD-PINN_Optimized.py").read_text(encoding="utf-8"))
+    consts = {t.id: node.value.value for node in tree.body if isinstance(node, ast.Assign)
+              for t in node.targets if isinstance(t, ast.Name) and isinstance(node.value, ast.Constant)}
+    grids = {}
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Assign) and isinstance(node.value, ast.Call)
+                and getattr(node.value.func, "attr", "") == "linspace"):
+            _, stop, num = node.value.args
+            grids[node.targets[0].id] = (consts[stop.id], num.value)
+    assert grids["x_star"] == (plot_results.L, plot_results.NX)
+    assert grids["f_star"] == (plot_results.FMAX, plot_results.NF)
