@@ -73,3 +73,33 @@ def test_grid_matches_the_training_script():
             grids[node.targets[0].id] = (consts[stop.id], num.value)
     assert grids["x_star"] == (plot_results.L, plot_results.NX)
     assert grids["f_star"] == (plot_results.FMAX, plot_results.NF)
+
+
+def test_sensor_fit_of_the_bundled_results():
+    d = plot_results.SCRIPT_DIR
+    fit = plot_results.sensor_fit(d / "data_inverse.txt", plot_results.load_field(d / "ur_pred_optimized.txt"),
+                                  plot_results.load_field(d / "ui_pred_optimized.txt"))
+    assert fit["n"] == 41
+    assert fit["rmse"] == pytest.approx((0.361, 0.789), abs=1e-3)
+    assert fit["peak_reading"] == pytest.approx(5.21)
+
+
+def test_sensor_fit_is_zero_for_a_perfect_field(tmp_path):
+    x = np.linspace(0, plot_results.L, plot_results.NX)
+    f = np.linspace(0, plot_results.FMAX, plot_results.NF)
+    X, F = np.meshgrid(x, f)
+    ur, ui = np.sin(X) * F, np.cos(X) + F
+    # Readings on the grid (x = 5 is position 50), so the field reproduces them exactly.
+    pos = np.full(5, 5.0)
+    freqs = f[[0, 3, 10, 20, 40]]
+    rows = [[p_, q, np.sin(p_) * q, np.cos(p_) + q] for p_, q in zip(pos, freqs)]
+    np.savetxt(tmp_path / "data.txt", rows)
+    fit = plot_results.sensor_fit(tmp_path / "data.txt", ur, ui)
+    assert fit["rmse"] == pytest.approx((0, 0), abs=1e-12)
+
+
+def test_sensor_fit_rejects_off_grid_frequencies(tmp_path):
+    np.savetxt(tmp_path / "data.txt", [[5.0, 0.013, 1.0, 1.0]])
+    field = np.zeros((plot_results.NF, plot_results.NX))
+    with pytest.raises(ValueError, match="away from the prediction grid"):
+        plot_results.sensor_fit(tmp_path / "data.txt", field, field)

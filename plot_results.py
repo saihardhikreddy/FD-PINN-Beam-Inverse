@@ -67,6 +67,43 @@ def print_loss_breakdown(path: Path) -> None:
     print(f"  {'total':<20} {info['total'][0]:>12.4g} -> {info['total'][1]:.4g}")
 
 
+def sensor_fit(data_path: Path, ur: np.ndarray, ui: np.ndarray) -> dict:
+    """How well the predicted field reproduces the sensor readings it was trained on.
+
+    data_inverse.txt has one reading per row: position x, frequency f, u_r, u_i. Each is
+    compared with the prediction at the same frequency row, interpolated along the beam.
+    Returns the RMSE and the largest error of each component, and the number of readings.
+    """
+    data = np.atleast_2d(np.loadtxt(data_path))
+    if data.shape[1] < 4:
+        raise ValueError(f"{data_path.name} needs 4 columns (x, f, u_r, u_i), found {data.shape[1]}")
+    nf, nx = ur.shape
+    x = np.linspace(0, L, nx)
+    f = np.linspace(0, FMAX, nf)
+    rows = np.abs(f[:, None] - data[:, 1]).argmin(axis=0)
+    off_grid = np.abs(f[rows] - data[:, 1]).max()
+    if off_grid > 1e-9:
+        raise ValueError(f"a sensor frequency is {off_grid:.3g} away from the prediction grid")
+    pred_r = np.array([np.interp(xi, x, ur[r]) for xi, r in zip(data[:, 0], rows)])
+    pred_i = np.array([np.interp(xi, x, ui[r]) for xi, r in zip(data[:, 0], rows)])
+    err_r, err_i = pred_r - data[:, 2], pred_i - data[:, 3]
+    return {
+        "n": len(data),
+        "rmse": (float(np.sqrt(np.mean(err_r ** 2))), float(np.sqrt(np.mean(err_i ** 2)))),
+        "max_error": (float(np.abs(err_r).max()), float(np.abs(err_i).max())),
+        "peak_reading": float(np.abs(data[:, 2:4]).max()),
+    }
+
+
+def print_sensor_fit(data_path: Path, output_dir: Path = SCRIPT_DIR) -> None:
+    ur = load_field(output_dir / "ur_pred_optimized.txt")
+    ui = load_field(output_dir / "ui_pred_optimized.txt")
+    fit = sensor_fit(data_path, ur, ui)
+    print(f"Fit to the {fit['n']} sensor readings (largest reading {fit['peak_reading']:.3g}):")
+    for name, rmse, worst in zip(("u_r", "u_i"), fit["rmse"], fit["max_error"]):
+        print(f"  {name}: RMSE {rmse:.3g}, worst {worst:.3g}")
+
+
 def visualize_beam_predictions(output_dir: Path = SCRIPT_DIR):
     ur_file = output_dir / "ur_pred_optimized.txt"
     ui_file = output_dir / "ui_pred_optimized.txt"
@@ -115,6 +152,7 @@ def visualize_beam_predictions(output_dir: Path = SCRIPT_DIR):
 
 
 if __name__ == "__main__":
-    visualize_beam_predictions()
+    if visualize_beam_predictions() and (SCRIPT_DIR / "data_inverse.txt").is_file():
+        print_sensor_fit(SCRIPT_DIR / "data_inverse.txt")
     if (SCRIPT_DIR / "loss.dat").is_file():
         print_loss_breakdown(SCRIPT_DIR / "loss.dat")
