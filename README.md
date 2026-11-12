@@ -12,17 +12,16 @@ Unlike standard PINN architectures, this model has been specifically engineered 
 ## Physics & Mathematics
 
 ### Governing Differential Equation
-Under harmonic excitation with angular frequency $\omega$, the transverse vibration of a uniform Euler-Bernoulli beam is governed by the 4th-order ordinary differential equation in the frequency domain:
+The beam is analysed in the frequency domain: the network takes the position $x \in [0, 10]$ and the excitation frequency $f \in [0, 0.5]$ and returns the complex deflection $\hat{w}(x, f) = w_R + i\,w_I$. With $\omega = 2\pi f$, `FD-PINN_Optimized.py` enforces
 
-$$EI \frac{d^4 \hat{w}(x)}{dx^4} - \rho A \omega^2 \hat{w}(x) = \hat{F}(x)$$
+$$EI \frac{d^4 \hat{w}}{dx^4} - m\,\omega^2 \hat{w} + 2 i\,k_s\,\omega^2 \hat{w} = \frac{p_0}{v}\, e^{-i \omega x / v}$$
 
-where:
-* $EI$: Flexural rigidity (bending stiffness, dynamic parameter to be identified), $\text{N}\cdot\text{m}^2$
-* $\rho$: Mass density, $\text{kg/m}^3$
-* $A$: Beam cross-sectional area, $\text{m}^2$
-* $\omega$: Harmonic excitation frequency, $\text{rad/s}$
-* $\hat{w}(x) = w_R(x) + i w_I(x)$: Complex displacement field decomposed into Real (in-phase) and Imaginary (quadrature) components
-* $\hat{F}(x) = F_R(x) + i F_I(x)$: Complex external load distribution
+as two real equations (its real and imaginary parts, `eq_ur` and `eq_ui`), where:
+* $EI = 1000 + CC$: flexural rigidity; $CC$ is the trainable unknown the inverse problem solves for
+* $m = 1$: mass per unit length
+* $k_s = 0.025$: coefficient of the $2 i k_s \omega^2 \hat{w}$ term (called the foundation coefficient in the script). Because it is imaginary, it acts like damping and couples $w_R$ and $w_I$
+* $p_0 = 20$, $v = 1$: magnitude and speed of the moving point load, whose Fourier transform gives the right-hand side
+* $L = 10$: beam length
 
 ### Boundary Conditions (Simply Supported Beam)
 At both ends of the beam ($x = 0$ and $x = L$):
@@ -39,7 +38,7 @@ $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{data}} + \lambda_{\text{pde}} 
 Heavy penalty weights ($\lambda_{\text{dirichlet}} = 10^6, \lambda_{\text{moment}} = 10^7$) force the neural network to strictly satisfy physical support conditions while identifying the optimal stiffness $EI$ using sparse sensor readings from `data_inverse.txt`.
 
 ## Results
-The L-BFGS optimizer successfully minimized the combined physics and data loss to a value of `1.58e+02` over 3000 epochs, allowing the model to simultaneously reconstruct the continuous vibration field and back-calculate the exact unknown stiffness parameter.
+The L-BFGS optimizer reduced the combined weighted loss to `1.58e+02` over 3000 epochs (see `loss.dat`). The bundled predictions reproduce the 41 sensor readings with an RMSE of 0.36 for $w_R$ and 0.79 for $w_I$, against readings up to 5.2 (`python plot_results.py` prints these). The discovered $CC$ is written to `variables.dat` during training; that file is not included here, so rerun `FD-PINN_Optimized.py` to see the identified stiffness.
 
 ---
 
