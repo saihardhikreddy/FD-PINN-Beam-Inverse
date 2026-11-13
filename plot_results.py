@@ -104,7 +104,18 @@ def print_sensor_fit(data_path: Path, output_dir: Path = SCRIPT_DIR) -> None:
         print(f"  {name}: RMSE {rmse:.3g}, worst {worst:.3g}")
 
 
-def visualize_beam_predictions(output_dir: Path = SCRIPT_DIR):
+def readings_at(data: np.ndarray, freq: float, tol: float = 1e-9) -> np.ndarray:
+    """The sensor rows (x, f, u_r, u_i) taken at one frequency."""
+    return data[np.abs(data[:, 1] - freq) <= tol]
+
+
+def visualize_beam_predictions(output_dir: Path = SCRIPT_DIR, data_path: Path = None):
+    """Plot the predicted field. When the sensor file is there (data_inverse.txt next to the
+    predictions, or data_path), the readings are drawn on it too: where they were taken on the
+    position-frequency map, and the measured u_r and u_i against the curves at the peak
+    frequency, so the plot shows what the network was actually fitted to."""
+    data_path = data_path or output_dir / "data_inverse.txt"
+    data = np.atleast_2d(np.loadtxt(data_path)) if data_path.is_file() else None
     ur_file = output_dir / "ur_pred_optimized.txt"
     ui_file = output_dir / "ui_pred_optimized.txt"
 
@@ -128,6 +139,13 @@ def visualize_beam_predictions(output_dir: Path = SCRIPT_DIR):
     axes[0].plot(x, ui[peak], label="Imaginary Component ($u_i$)", color="#d62728", linewidth=2,
                  linestyle="--")
     axes[0].plot(x, magnitude[peak], label=r"Magnitude $|u|$", color="#2ca02c", linewidth=2)
+    if data is not None:
+        here = readings_at(data, f[peak])
+        if len(here):
+            axes[0].scatter(here[:, 0], here[:, 2], color="#1f77b4", edgecolor="k", s=50, zorder=5,
+                            label="Measured $u_r$")
+            axes[0].scatter(here[:, 0], here[:, 3], color="#d62728", edgecolor="k", s=50, zorder=5,
+                            marker="s", label="Measured $u_i$")
     axes[0].set_xlabel("Beam Coordinate ($x$)", fontsize=12)
     axes[0].set_ylabel("Displacement", fontsize=12)
     axes[0].set_title(f"Predicted Complex Beam Deflection at f = {f[peak]:.4f}", fontsize=13,
@@ -138,6 +156,10 @@ def visualize_beam_predictions(output_dir: Path = SCRIPT_DIR):
     # Subplot 2: Vibration magnitude over position and frequency
     mesh = axes[1].pcolormesh(x, f, magnitude, shading="auto", cmap="viridis")
     fig.colorbar(mesh, ax=axes[1], label="Displacement Magnitude $|u|$")
+    if data is not None:
+        axes[1].scatter(data[:, 0], data[:, 1], s=12, color="white", edgecolor="k", linewidth=0.5,
+                        label=f"{len(data)} sensor readings")
+        axes[1].legend(loc="upper right", frameon=True)
     axes[1].set_xlabel("Beam Coordinate ($x$)", fontsize=12)
     axes[1].set_ylabel("Frequency ($f$)", fontsize=12)
     axes[1].set_title("Beam Vibration Amplitude over Position and Frequency", fontsize=13,

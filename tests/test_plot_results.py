@@ -103,3 +103,17 @@ def test_sensor_fit_rejects_off_grid_frequencies(tmp_path):
     field = np.zeros((plot_results.NF, plot_results.NX))
     with pytest.raises(ValueError, match="away from the prediction grid"):
         plot_results.sensor_fit(tmp_path / "data.txt", field, field)
+
+
+def test_readings_at_one_frequency():
+    data = np.array([[5, 0.0, 1, 2], [5, 0.0125, 3, 4], [7, 0.0125, 5, 6]])
+    assert plot_results.readings_at(data, 0.0125)[:, 0].tolist() == [5, 7]
+    assert len(plot_results.readings_at(data, 0.3)) == 0
+
+
+def test_plot_with_sensor_readings(tmp_path):
+    import shutil
+    for name in ("ur_pred_optimized.txt", "ui_pred_optimized.txt", "data_inverse.txt"):
+        shutil.copy(plot_results.SCRIPT_DIR / name, tmp_path / name)
+    png = plot_results.visualize_beam_predictions(tmp_path)
+    assert png.is_file() and png.stat().st_size > 10_000
