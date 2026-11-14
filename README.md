@@ -38,7 +38,7 @@ $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{data}} + \lambda_{\text{pde}} 
 Heavy penalty weights ($\lambda_{\text{dirichlet}} = 10^6, \lambda_{\text{moment}} = 10^7$) force the neural network to strictly satisfy physical support conditions while identifying the optimal stiffness $EI$ using sparse sensor readings from `data_inverse.txt`.
 
 ## Results
-The L-BFGS optimizer reduced the combined weighted loss to `1.58e+02` over 3000 epochs (see `loss.dat`). The bundled predictions reproduce the 41 sensor readings with an RMSE of 0.36 for $w_R$ and 0.79 for $w_I$, against readings up to 5.2 (`python plot_results.py` prints these). The discovered $CC$ is written to `variables.dat` during training; that file is not included here, so rerun `FD-PINN_Optimized.py` to see the identified stiffness.
+The L-BFGS optimizer reduced the combined weighted loss to `1.58e+02` over 3000 epochs (see `loss.dat`). The bundled predictions reproduce the 41 sensor readings with an RMSE of 0.36 for $w_R$ and 0.79 for $w_I$, against readings up to 5.2 (`python plot_results.py` prints these). The discovered $CC$ is written to `variables.dat` during training; that file is not included here, so rerun `FD-PINN_Optimized.py` to see the identified stiffness. Once it exists, `python plot_results.py` also prints the final $CC$ and $EI$ and how much $CC$ moved over the last 500 steps, which shows whether training ran long enough for it to settle.
 
 ---
 

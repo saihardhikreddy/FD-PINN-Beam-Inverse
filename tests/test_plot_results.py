@@ -117,3 +117,26 @@ def test_plot_with_sensor_readings(tmp_path):
         shutil.copy(plot_results.SCRIPT_DIR / name, tmp_path / name)
     png = plot_results.visualize_beam_predictions(tmp_path)
     assert png.is_file() and png.stat().st_size > 10_000
+
+
+def test_stiffness_history_reads_deepxde_variable_logs(tmp_path, capsys):
+    from plot_results import print_stiffness, stiffness_history
+
+    log = tmp_path / "variables.dat"
+    log.write_text("0 [1.000000e+00]\n100 [2.500000e+00]\n\n200 [2.750000e+00]\n")
+    hist = stiffness_history(log)
+    assert hist.tolist() == [[0, 1.0], [100, 2.5], [200, 2.75]]
+    print_stiffness(log, window=1)
+    out = capsys.readouterr().out
+    assert "step 200: CC = 2.75, EI = 1000 + CC = 1002.75" in out
+    assert "changed by +0.25 since step 100" in out
+
+
+def test_stiffness_history_rejects_other_files(tmp_path):
+    from plot_results import stiffness_history
+
+    bad = tmp_path / "variables.dat"
+    for text in ("", "step value\n", "100 [abc]\n"):
+        bad.write_text(text)
+        with pytest.raises(ValueError):
+            stiffness_history(bad)

@@ -104,6 +104,37 @@ def print_sensor_fit(data_path: Path, output_dir: Path = SCRIPT_DIR) -> None:
         print(f"  {name}: RMSE {rmse:.3g}, worst {worst:.3g}")
 
 
+EI_BASE = 1000.0  # FD-PINN_Optimized.py solves for CC in EI = 1000 + CC
+
+
+def stiffness_history(path: Path) -> np.ndarray:
+    """(step, CC) rows from variables.dat, the file DeepXDE's VariableValue callback writes
+    during training: one line per logged step, such as "300 [2.513274e+00]"."""
+    rows = []
+    for line_no, line in enumerate(Path(path).read_text().splitlines(), 1):
+        if not line.strip():
+            continue
+        step, _, value = line.partition(" ")
+        try:
+            rows.append((int(float(step)), float(value.strip().strip("[]").split(",")[0])))
+        except ValueError:
+            raise ValueError(f"{Path(path).name} line {line_no} is not 'step [value]': {line!r}") from None
+    if not rows:
+        raise ValueError(f"{Path(path).name} has no logged steps")
+    return np.array(rows)
+
+
+def print_stiffness(path: Path, window: int = 5) -> None:
+    """The discovered stiffness, and how much CC still moved over the last few logged steps
+    (a large change means training stopped before the inverse problem settled)."""
+    hist = stiffness_history(path)
+    step, cc = hist[-1]
+    print(f"Discovered stiffness at step {int(step)}: CC = {cc:.6g}, EI = {EI_BASE:g} + CC = {EI_BASE + cc:.6g}")
+    if len(hist) > 1:
+        earlier = hist[max(0, len(hist) - 1 - window)]
+        print(f"  CC changed by {cc - earlier[1]:+.3g} since step {int(earlier[0])}")
+
+
 def readings_at(data: np.ndarray, freq: float, tol: float = 1e-9) -> np.ndarray:
     """The sensor rows (x, f, u_r, u_i) taken at one frequency."""
     return data[np.abs(data[:, 1] - freq) <= tol]
@@ -178,3 +209,5 @@ if __name__ == "__main__":
         print_sensor_fit(SCRIPT_DIR / "data_inverse.txt")
     if (SCRIPT_DIR / "loss.dat").is_file():
         print_loss_breakdown(SCRIPT_DIR / "loss.dat")
+    if (SCRIPT_DIR / "variables.dat").is_file():
+        print_stiffness(SCRIPT_DIR / "variables.dat")
