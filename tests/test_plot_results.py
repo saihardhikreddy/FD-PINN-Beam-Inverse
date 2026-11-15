@@ -140,3 +140,27 @@ def test_stiffness_history_rejects_other_files(tmp_path):
         bad.write_text(text)
         with pytest.raises(ValueError):
             stiffness_history(bad)
+
+
+def test_command_line_on_another_run_folder(tmp_path, capsys):
+    import shutil
+
+    here = Path(plot_results.__file__).resolve().parent
+    for name in ("ur_pred_optimized.txt", "ui_pred_optimized.txt", "loss.dat"):
+        shutil.copy(here / name, tmp_path / name)
+    (tmp_path / "variables.dat").write_text("0 [1.000000e+00]\n100 [1.500000e+00]\n")
+    assert plot_results.main(["--dir", str(tmp_path), "--no-plot"]) == 0
+    out = capsys.readouterr().out
+    assert "Fit to the 41 sensor readings" in out  # data_inverse.txt found next to the script
+    assert "Training loss by term" in out and "EI = 1000 + CC = 1001.5" in out
+    assert not (tmp_path / "beam_vibration_field.png").exists()
+
+    assert plot_results.main(["--dir", str(tmp_path)]) == 0
+    assert (tmp_path / "beam_vibration_field.png").is_file()
+
+
+def test_command_line_reports_a_folder_without_predictions(tmp_path, capsys):
+    assert plot_results.main(["--dir", str(tmp_path), "--no-plot"]) == 1
+    assert "not found" in capsys.readouterr().out
+    with pytest.raises(SystemExit):
+        plot_results.main(["--dir", str(tmp_path / "missing")])

@@ -73,6 +73,8 @@ python plot_results.py
 ```
 Reshapes the saved predictions into a frequency × position grid and draws the displacement field to `beam_vibration_field.png`, with the sensor readings on it: their positions on the frequency × position map (all 41 are at x = 5), and the measured $u_r$ and $u_i$ beside the predicted curves at the most excited frequency. It then prints how closely the predictions match the 41 sensor readings in `data_inverse.txt` (RMSE 0.36 for $u_r$ and 0.79 for $u_i$, against readings up to 5.2), and how each loss term (PDE residuals, sensor fits, boundary conditions) fell during training, from `loss.dat`. It needs only numpy and matplotlib.
 
+To check another training run, point it at that run's folder: `python plot_results.py --dir runs/lr-1e-3` (the plot is written there). `--no-plot` prints the checks without writing the PNG, and `--data FILE` uses another sensor file.
+
 ### Running the Tests
 ```bash
 pip install pytest

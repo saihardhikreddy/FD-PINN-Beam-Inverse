@@ -204,10 +204,36 @@ def visualize_beam_predictions(output_dir: Path = SCRIPT_DIR, data_path: Path = 
     return output_png
 
 
+def main(argv=None) -> int:
+    """Command line: plot and report on one training run's outputs."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Plot and check the FD-PINN beam predictions.")
+    parser.add_argument("--dir", type=Path, default=SCRIPT_DIR,
+                        help="folder with the run's ur/ui_pred_optimized.txt, loss.dat and variables.dat "
+                             "(default: this script's folder); the plot is written there too")
+    parser.add_argument("--data", type=Path, default=None,
+                        help="sensor readings file (default: data_inverse.txt in --dir, else next to this script)")
+    parser.add_argument("--no-plot", action="store_true", help="print the checks only, don't write the PNG")
+    args = parser.parse_args(argv)
+    if not args.dir.is_dir():
+        parser.error(f"--dir {str(args.dir)!r} is not a folder")
+    data = args.data or next((p for p in (args.dir / "data_inverse.txt", SCRIPT_DIR / "data_inverse.txt")
+                              if p.is_file()), None)
+
+    have_fields = all((args.dir / name).is_file() for name in ("ur_pred_optimized.txt", "ui_pred_optimized.txt"))
+    if not args.no_plot:
+        visualize_beam_predictions(args.dir, data)
+    elif not have_fields:
+        print("Prediction files ur_pred_optimized.txt or ui_pred_optimized.txt not found.")
+    if have_fields and data is not None:
+        print_sensor_fit(data, args.dir)
+    if (args.dir / "loss.dat").is_file():
+        print_loss_breakdown(args.dir / "loss.dat")
+    if (args.dir / "variables.dat").is_file():
+        print_stiffness(args.dir / "variables.dat")
+    return 0 if have_fields else 1
+
+
 if __name__ == "__main__":
-    if visualize_beam_predictions() and (SCRIPT_DIR / "data_inverse.txt").is_file():
-        print_sensor_fit(SCRIPT_DIR / "data_inverse.txt")
-    if (SCRIPT_DIR / "loss.dat").is_file():
-        print_loss_breakdown(SCRIPT_DIR / "loss.dat")
-    if (SCRIPT_DIR / "variables.dat").is_file():
-        print_stiffness(SCRIPT_DIR / "variables.dat")
+    raise SystemExit(main())
