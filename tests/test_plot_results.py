@@ -105,6 +105,16 @@ def test_sensor_fit_rejects_off_grid_frequencies(tmp_path):
         plot_results.sensor_fit(tmp_path / "data.txt", field, field)
 
 
+def test_sensor_fit_rejects_positions_off_the_beam(tmp_path):
+    field = np.zeros((plot_results.NF, plot_results.NX))
+    for x in (-0.5, plot_results.L + 2):
+        np.savetxt(tmp_path / "data.txt", [[5.0, 0.0, 1.0, 1.0], [x, 0.0, 1.0, 1.0]])
+        with pytest.raises(ValueError, match="off the 10-long beam"):
+            plot_results.sensor_fit(tmp_path / "data.txt", field, field)
+    np.savetxt(tmp_path / "data.txt", [[0.0, 0.0, 0.0, 0.0], [plot_results.L, 0.0, 0.0, 0.0]])  # the supports
+    assert plot_results.sensor_fit(tmp_path / "data.txt", field, field)["n"] == 2
+
+
 def test_readings_at_one_frequency():
     data = np.array([[5, 0.0, 1, 2], [5, 0.0125, 3, 4], [7, 0.0125, 5, 6]])
     assert plot_results.readings_at(data, 0.0125)[:, 0].tolist() == [5, 7]

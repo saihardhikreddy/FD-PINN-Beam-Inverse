@@ -78,6 +78,10 @@ def sensor_fit(data_path: Path, ur: np.ndarray, ui: np.ndarray) -> dict:
     if data.shape[1] < 4:
         raise ValueError(f"{data_path.name} needs 4 columns (x, f, u_r, u_i), found {data.shape[1]}")
     nf, nx = ur.shape
+    outside = data[(data[:, 0] < 0) | (data[:, 0] > L), 0]
+    if outside.size:
+        # np.interp would quietly compare it with the prediction at the nearest end of the beam.
+        raise ValueError(f"a sensor position ({outside[0]:g}) is off the {L:g}-long beam")
     x = np.linspace(0, L, nx)
     f = np.linspace(0, FMAX, nf)
     rows = np.abs(f[:, None] - data[:, 1]).argmin(axis=0)
