@@ -174,3 +174,17 @@ def test_command_line_reports_a_folder_without_predictions(tmp_path, capsys):
     assert "not found" in capsys.readouterr().out
     with pytest.raises(SystemExit):
         plot_results.main(["--dir", str(tmp_path / "missing")])
+
+
+def test_command_line_explains_a_bad_sensor_file(tmp_path, capsys):
+    import shutil
+
+    here = Path(plot_results.__file__).resolve().parent
+    for name in ("ur_pred_optimized.txt", "ui_pred_optimized.txt"):
+        shutil.copy(here / name, tmp_path / name)
+    with pytest.raises(SystemExit):  # a mistyped --data path is an argument error, not a traceback
+        plot_results.main(["--dir", str(tmp_path), "--no-plot", "--data", str(tmp_path / "nope.txt")])
+    bad = tmp_path / "readings.txt"
+    bad.write_text("12.0 0.25 0.1 0.2\n")  # off the 10 m beam
+    assert plot_results.main(["--dir", str(tmp_path), "--no-plot", "--data", str(bad)]) == 0
+    assert "Sensor check skipped: a sensor position (12) is off the 10-long beam" in capsys.readouterr().out

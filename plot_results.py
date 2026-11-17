@@ -222,6 +222,9 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     if not args.dir.is_dir():
         parser.error(f"--dir {str(args.dir)!r} is not a folder")
+    if args.data is not None and not args.data.is_file():
+        # Used to be skipped quietly by the plot and then crash the sensor check with a traceback.
+        parser.error(f"--data {str(args.data)!r} is not a file")
     data = args.data or next((p for p in (args.dir / "data_inverse.txt", SCRIPT_DIR / "data_inverse.txt")
                               if p.is_file()), None)
 
@@ -231,7 +234,10 @@ def main(argv=None) -> int:
     elif not have_fields:
         print("Prediction files ur_pred_optimized.txt or ui_pred_optimized.txt not found.")
     if have_fields and data is not None:
-        print_sensor_fit(data, args.dir)
+        try:
+            print_sensor_fit(data, args.dir)
+        except ValueError as e:  # a reading off the beam or off the frequency grid, a short row
+            print(f"Sensor check skipped: {e}")
     if (args.dir / "loss.dat").is_file():
         print_loss_breakdown(args.dir / "loss.dat")
     if (args.dir / "variables.dat").is_file():
