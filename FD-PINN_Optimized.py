@@ -98,7 +98,9 @@ dde.optimizers.set_LBFGS_options(ftol=0, gtol=1e-20, maxiter=3000)
 
 # ==========================================
 # 9. OPTIMIZED TRAINING WEIGHTS
-# MODIFICATION: Increased boundary condition weights (1e3, 1e2)
+# One weight per loss term, in the order the terms were passed to TimePDE (plot_results.py's
+# LOSS_TERMS reads loss.dat in the same order):
+#   PDE real, PDE imag | sensor data real, imag | u_r = 0, u_i = 0 | u_r'' = 0, u_i'' = 0
 # ==========================================
 model.compile("L-BFGS-B", 
               loss_weights=[1, 1, 1e2, 1e1, 1e3, 1e2, 1e6, 1e7], 

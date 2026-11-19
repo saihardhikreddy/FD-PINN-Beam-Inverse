@@ -7,7 +7,7 @@ This repository contains a customized Physics-Informed Neural Network (PINN) des
 Unlike standard PINN architectures, this model has been specifically engineered for oscillatory structural dynamics:
 1. **Deeper Architecture:** Expanded to 4 hidden layers (50 neurons each) to better capture high-frequency bending modes.
 2. **SIREN Activation:** Replaced standard `tanh` with sinusoidal (`sin`) activation functions, which are mathematically intuitive for wave and vibration mechanics.
-3. **Aggressive Boundary Weighting:** Applied heavy penalty weights ($10^6$ and $10^7$) to Dirichlet and Operator boundary conditions to ensure the network strictly respects the physical reality of the zero-displacement supports.
+3. **Aggressive Boundary Weighting:** Applied heavy penalty weights to the boundary conditions: $10^3$ and $10^2$ to the zero-displacement (Dirichlet) conditions on $w_R$ and $w_I$, and $10^6$ and $10^7$ to the zero-moment ($w'' = 0$) operator conditions, so the network strictly respects the simply supported ends.
 
 ## Physics & Mathematics
 
@@ -35,7 +35,7 @@ The PINN minimizes a weighted compound loss function:
 
 $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{data}} + \lambda_{\text{pde}} \mathcal{L}_{\text{pde}} + \lambda_{\text{dirichlet}} \mathcal{L}_{\text{dirichlet}} + \lambda_{\text{moment}} \mathcal{L}_{\text{moment}}$$
 
-Heavy penalty weights ($\lambda_{\text{dirichlet}} = 10^6, \lambda_{\text{moment}} = 10^7$) force the neural network to strictly satisfy physical support conditions while identifying the optimal stiffness $EI$ using sparse sensor readings from `data_inverse.txt`.
+Heavy penalty weights ($\lambda_{\text{dirichlet}} = 10^3, 10^2$ and $\lambda_{\text{moment}} = 10^6, 10^7$ for the real and imaginary parts; the sensor readings get $10^2$ and $10^1$) force the neural network to strictly satisfy physical support conditions while identifying the optimal stiffness $EI$ using sparse sensor readings from `data_inverse.txt`.
 
 ## Results
 The L-BFGS optimizer reduced the combined weighted loss to `1.58e+02` over 3000 epochs (see `loss.dat`). The bundled predictions reproduce the 41 sensor readings with an RMSE of 0.36 for $w_R$ and 0.79 for $w_I$, against readings up to 5.2 (`python plot_results.py` prints these). The discovered $CC$ is written to `variables.dat` during training; that file is not included here, so rerun `FD-PINN_Optimized.py` to see the identified stiffness. Once it exists, `python plot_results.py` also prints the final $CC$ and $EI$ and how much $CC$ moved over the last 500 steps, which shows whether training ran long enough for it to settle.
