@@ -88,12 +88,14 @@ pde_data = dde.data.TimePDE(geomtime, pde, [observe_y1, observe_y2, bc1, bc2, bc
 # 8. OPTIMIZED ARCHITECTURE
 # MODIFICATION: 4 layers, 50 neurons, 'sin' activation for oscillatory physics
 # ==========================================
-net = dde.maps.FNN([2] + [50] * 4 + [2], "sin", "Glorot uniform")
+net = dde.nn.FNN([2] + [50] * 4 + [2], "sin", "Glorot uniform")
 
 net.apply_feature_transform(lambda x: tf.concat([x[:,0:1]/L, x[:,1:2]/fmax], axis=1))
 net.apply_output_transform(lambda x, y: y * 10)
 
 model = dde.Model(pde_data, net)
+# L-BFGS runs until maxiter (or a tolerance) and ignores model.train's iteration count, so this
+# is the one place that sets how long training lasts.
 dde.optimizers.set_LBFGS_options(ftol=0, gtol=1e-20, maxiter=3000)
 
 # ==========================================
@@ -117,8 +119,7 @@ variable = dde.callbacks.VariableValue(CC, period=100, filename=str(HERE / "vari
 # it: without this the checkpoint save at the end of training fails and nothing is written.
 (HERE / "model").mkdir(exist_ok=True)
 losshistory, train_state = model.train(
-    epochs=3000, 
-    display_every=100, 
+    display_every=100,
     callbacks=[variable], 
     model_save_path=str(HERE / "model" / "trained-model-optimized")
 )
