@@ -129,6 +129,17 @@ def test_plot_with_sensor_readings(tmp_path):
     assert png.is_file() and png.stat().st_size > 10_000
 
 
+@pytest.mark.parametrize("readings", ["5 0.0125 4.75\n7 0.0125 3.1\n", "5 0.0125 4.75\n", ""])
+def test_short_sensor_file_still_plots_the_prediction(tmp_path, capsys, readings):
+    import shutil
+    for name in ("ur_pred_optimized.txt", "ui_pred_optimized.txt"):
+        shutil.copy(plot_results.SCRIPT_DIR / name, tmp_path / name)
+    (tmp_path / "data_inverse.txt").write_text(readings)   # u_i column missing, or nothing at all
+    png = plot_results.visualize_beam_predictions(tmp_path)
+    assert png.is_file()
+    assert "needs 4 columns" in capsys.readouterr().out
+
+
 def test_stiffness_history_reads_deepxde_variable_logs(tmp_path, capsys):
     from plot_results import print_stiffness, stiffness_history
 

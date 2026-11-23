@@ -150,7 +150,13 @@ def visualize_beam_predictions(output_dir: Path = SCRIPT_DIR, data_path: Path = 
     position-frequency map, and the measured u_r and u_i against the curves at the peak
     frequency, so the plot shows what the network was actually fitted to."""
     data_path = data_path or output_dir / "data_inverse.txt"
-    data = np.atleast_2d(np.loadtxt(data_path)) if data_path.is_file() else None
+    data = np.loadtxt(data_path, ndmin=2) if data_path.is_file() else None
+    if data is not None and data.shape[1] < 4:
+        # A short or empty file used to crash the plot (IndexError) before the sensor check below
+        # could say what was wrong. Plot the prediction alone.
+        print(f"{data_path.name} needs 4 columns (x, f, u_r, u_i), found {data.shape[1]}: "
+              "plotting without the sensor readings.")
+        data = None
     ur_file = output_dir / "ur_pred_optimized.txt"
     ui_file = output_dir / "ui_pred_optimized.txt"
 
