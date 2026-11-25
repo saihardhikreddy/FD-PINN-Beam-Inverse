@@ -199,3 +199,25 @@ def test_command_line_explains_a_bad_sensor_file(tmp_path, capsys):
     bad.write_text("12.0 0.25 0.1 0.2\n")  # off the 10 m beam
     assert plot_results.main(["--dir", str(tmp_path), "--no-plot", "--data", str(bad)]) == 0
     assert "Sensor check skipped: a sensor position (12) is off the 10-long beam" in capsys.readouterr().out
+
+
+def test_command_line_skips_a_bad_loss_or_variables_file(tmp_path, capsys):
+    import shutil
+
+    here = Path(plot_results.__file__).resolve().parent
+    for name in ("ur_pred_optimized.txt", "ui_pred_optimized.txt"):
+        shutil.copy(here / name, tmp_path / name)
+    for loss_text, var_text in (("", ""), ("0 1.0 2.0\n", "step value\n"), ("x y z\n", "100 [abc]\n")):
+        (tmp_path / "loss.dat").write_text(loss_text)
+        (tmp_path / "variables.dat").write_text(var_text)
+        assert plot_results.main(["--dir", str(tmp_path), "--no-plot"]) == 0
+        out = capsys.readouterr().out
+        assert "Fit to the 41 sensor readings" in out  # the other checks still ran
+        assert "Loss breakdown skipped:" in out and "Stiffness report skipped:" in out
+
+
+def test_loss_breakdown_names_an_empty_file(tmp_path):
+    empty = tmp_path / "loss.dat"
+    empty.write_text("")
+    with pytest.raises(ValueError, match="no logged steps"):
+        plot_results.loss_breakdown(empty)

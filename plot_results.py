@@ -46,8 +46,11 @@ def loss_breakdown(path: Path) -> dict:
     Each row of loss.dat is: step, the weighted training loss of every term, then the same for
     the test set. Returns {"steps": (first, last), "terms": {name: (first, last)}, "total": (first, last)}.
     """
-    rows = np.atleast_2d(np.loadtxt(path))
+    rows = np.loadtxt(path, ndmin=2)
     n = len(LOSS_TERMS)
+    if rows.size == 0:
+        # An empty file used to come back as "-1 loss columns".
+        raise ValueError(f"{path.name} has no logged steps")
     if rows.shape[1] < 1 + n:
         raise ValueError(f"{path.name} has {rows.shape[1] - 1} loss columns, expected at least {n}")
     first, last = rows[0, 1:1 + n], rows[-1, 1:1 + n]
@@ -244,10 +247,18 @@ def main(argv=None) -> int:
             print_sensor_fit(data, args.dir)
         except ValueError as e:  # a reading off the beam or off the frequency grid, a short row
             print(f"Sensor check skipped: {e}")
+    # Like the sensor check: a loss.dat or variables.dat from another setup (or cut short by a
+    # stopped run) is reported and skipped, instead of a traceback after the plot was written.
     if (args.dir / "loss.dat").is_file():
-        print_loss_breakdown(args.dir / "loss.dat")
+        try:
+            print_loss_breakdown(args.dir / "loss.dat")
+        except ValueError as e:
+            print(f"Loss breakdown skipped: {e}")
     if (args.dir / "variables.dat").is_file():
-        print_stiffness(args.dir / "variables.dat")
+        try:
+            print_stiffness(args.dir / "variables.dat")
+        except ValueError as e:
+            print(f"Stiffness report skipped: {e}")
     return 0 if have_fields else 1
 
 
